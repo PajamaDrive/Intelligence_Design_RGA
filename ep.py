@@ -3,8 +3,9 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 
-GENE_NUM = 20
-GENERATION = 100
+GENE_NUM = 50
+GENERATION = 500
+Y_MAX = 1.0e5
 THRESHOLD = 1.0e-5
 MIN = -2.048
 MAX = 2.048
@@ -33,27 +34,26 @@ class Indivisual:
         self.survivalValue = None
 
     def rosenBrock(self):
-        return np.sum(self.gene ** 2)
-        #return np.sum([100 * (self.gene[0] - self.gene[i] ** 2) ** 2 + (1 - self.gene[i]) ** 2 for i in range(1, len(self.gene))])
+        return np.sum([100 * (self.gene[0] - self.gene[i] ** 2) ** 2 + (1 - self.gene[i]) ** 2 for i in range(1, len(self.gene))])
 
 class EP:
-    def __init__(self, indivisualNum):
+    def __init__(self, m, indivisualNum):
+        self.m = m
         self.indivisualNum = indivisualNum
         self.indivisuals = [Indivisual(GENE_NUM) for i in range(self.indivisualNum)]
-        self.m = int(len(self.indivisuals) / 2)
 
     def execEP(self):
         loop = 0
         generationList = []
         bestValueList = []
         while loop < GENERATION and self.calcFitness() > THRESHOLD:
-            if loop % 100 == 0:
+            if loop % 50 == 0:
                 print("generation : %d  min : %f" % (loop, self.calcFitness()))
                 print(sorted(self.indivisuals, key = lambda x: x.rosenBrock())[0].gene)
                 generationList.append(loop)
                 bestValueList.append(self.calcFitness())
             copyIndivisual = copy.deepcopy(self.indivisuals)
-            self.indivisuals.extend(self.generateMutation(copyIndivisual))
+            self.indivisuals.extend(list(map(self.generateMutation, copyIndivisual)))
             self.calcSurvivalValue()
             self.indivisuals.sort(key = lambda x: x.survivalValue, reverse = True)
             del self.indivisuals[self.indivisualNum:]
@@ -68,12 +68,9 @@ class EP:
         return min(self.indivisuals, key = lambda x: x.rosenBrock()).rosenBrock()
 
     def generateMutation(self, indivisual):
-        for i in range(len(indivisual)):
-            indivisual[i].gene += np.sqrt(indivisual[i].rosenBrock()) * np.random.normal(0, 1, GENE_NUM)
-            while min(indivisual[i].gene) < MIN:
-                indivisual[i].gene[indivisual[i].gene.argmin()] = MIN
-            while max(indivisual[i].gene) > MAX:
-                indivisual[i].gene[indivisual[i].gene.argmax()] = MAX
+        indivisual.gene += np.sqrt(indivisual.rosenBrock()) * np.random.normal(0, 1, GENE_NUM)
+        if min(indivisual.gene) < MIN  or max(indivisual.gene) > MAX:
+            indivisual.gene = list(map(lambda x: MAX if x > MAX else (MIN if x < MIN else x), indivisual.gene))
         return indivisual
 
     def calcSurvivalValue(self):
@@ -87,15 +84,15 @@ class EP:
         ax.plot(generationList, bestValueList, label = label)
 
 if __name__ == "__main__":
-    mList = [1, 10, 50, 100, 500]
-    indList = [100, 500, 1000, 5000, 10000]
+    mList = [50, 100]
+    indList = [500, 1000]
     fig, ax = plt.subplots()
     for m in mList:
-        ep = EP(m, indList[2])
+        ep = EP(m, indList[0])
         ep.execEPAndSaveResut(ax, "m=" + str(m))
-    saveResult(ax, "ep_m")
+    saveResult(ax, "ep_f_m")
     fig, ax = plt.subplots()
     for i in indList:
-        ep = EP(mList[2], i)
+        ep = EP(mList[0], i)
         ep.execEPAndSaveResut(ax, "indivisual=" + str(i))
-    saveResult(ax, "ep_indivisual")
+    saveResult(ax, "ep_f_indivisual")

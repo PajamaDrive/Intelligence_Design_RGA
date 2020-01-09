@@ -34,9 +34,10 @@ class Indivisual:
         return np.sum(100 * (self.gene[0] - self.gene[1:] ** 2) ** 2 + (1 - self.gene[1:]) ** 2)
 
 class RGA:
-    def __init__(self, k, indivisualNum):
+    def __init__(self, k, indivisualNum, childNum):
         self.k = k
         self.indivisualNum = indivisualNum
+        self.childNum = childNum
         self.indivisuals = [Indivisual(GENE_NUM) for i in range(self.indivisualNum)]
         self.parentIndex = None
         self.parentSize = GENE_NUM + self.k
@@ -67,7 +68,7 @@ class RGA:
     def execJGG(self):
         self.parentIndex = noDuplicationRandInt(0, self.indivisualNum - 1, self.parentSize)
         parent = [self.indivisuals[i] for i in self.parentIndex]
-        child = self.execREX(parent, GENE_NUM * 10)
+        child = self.execREX(parent, self.childNum)
         eliteChild = self.selectElite(child, self.parentSize)
         self.exchangeIndividual(eliteChild)
 
@@ -78,10 +79,8 @@ class RGA:
         while len(child) < childNum:
             tmp = Indivisual(GENE_NUM)
             tmp.gene = centerOfGravity + np.sum(np.random.normal(0, np.sqrt(1.0 / self.parentSize), (len(parentGene), 1)) * (parentGene - centerOfGravity), axis = 0)
-            while min(tmp.gene) < MIN:
-                tmp.gene[tmp.gene.argmin()] = MIN
-            while max(tmp.gene) > MAX:
-                tmp.gene[tmp.gene.argmax()] = MAX
+            if min(tmp.gene) < MIN  or max(tmp.gene) > MAX:
+                tmp.gene = np.array(list(map(lambda x: MAX if x > MAX else (MIN if x < MIN else x), tmp.gene)))
             child.append(tmp)
         return child
 
@@ -99,15 +98,21 @@ class RGA:
         ax.plot(generationList, bestValueList, label = label)
 
 if __name__ == "__main__":
-    kList = [1, 10, 50, 100, 500]
-    indList = [100, 500, 1000, 5000, 10000]
+    kList = [1, 10, 50, 100]
+    indList = [100, 500, 1000, 5000]
+    childList = [100, 500, 1000, 5000]
     fig, ax = plt.subplots()
     for k in kList:
-        ga = RGA(k, indList[2])
+        ga = RGA(k, indList[2], childList[1])
         ga.execRGAAndSaveResut(ax, "k=" + str(k))
     saveResult(ax, "ga_k")
     fig, ax = plt.subplots()
     for i in indList:
-        ga = RGA(kList[2], i)
+        ga = RGA(kList[2], i, childList[1])
         ga.execRGAAndSaveResut(ax, "indivisual=" + str(i))
     saveResult(ax, "ga_indivisual")
+    fig, ax = plt.subplots()
+    for c in childList:
+        ga = RGA(kList[2], indList[2], c)
+        ga.execRGAAndSaveResut(ax, "childNum=" + str(c))
+    saveResult(ax, "ga_child")
