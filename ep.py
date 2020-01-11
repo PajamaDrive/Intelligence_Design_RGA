@@ -34,20 +34,21 @@ class Indivisual:
         self.survivalValue = None
 
     def rosenBrock(self):
-        return np.sum([100 * (self.gene[0] - self.gene[i] ** 2) ** 2 + (1 - self.gene[i]) ** 2 for i in range(1, len(self.gene))])
+        return np.sum(100 * (self.gene[0] - self.gene[1:] ** 2) ** 2 + (1 - self.gene[1:]) ** 2)
 
 class EP:
-    def __init__(self, m, indivisualNum):
+    def __init__(self, m, indivisualNum, sigma):
         self.m = m
         self.indivisualNum = indivisualNum
         self.indivisuals = [Indivisual(GENE_NUM) for i in range(self.indivisualNum)]
+        self.sigma = sigma
 
     def execEP(self):
         loop = 0
         generationList = []
         bestValueList = []
         while loop < GENERATION and self.calcFitness() > THRESHOLD:
-            if loop % 50 == 0:
+            if loop % 100 == 0:
                 print("generation : %d  min : %f" % (loop, self.calcFitness()))
                 print(sorted(self.indivisuals, key = lambda x: x.rosenBrock())[0].gene)
                 generationList.append(loop)
@@ -68,9 +69,9 @@ class EP:
         return min(self.indivisuals, key = lambda x: x.rosenBrock()).rosenBrock()
 
     def generateMutation(self, indivisual):
-        indivisual.gene += np.sqrt(indivisual.rosenBrock()) * np.random.normal(0, 1, GENE_NUM)
+        indivisual.gene += np.sqrt(indivisual.rosenBrock()) * np.random.normal(0, self.sigma, GENE_NUM)
         if min(indivisual.gene) < MIN  or max(indivisual.gene) > MAX:
-            indivisual.gene = list(map(lambda x: MAX if x > MAX else (MIN if x < MIN else x), indivisual.gene))
+            indivisual.gene = np.array(list(map(lambda x: MAX if x > MAX else (MIN if x < MIN else x), indivisual.gene)))
         return indivisual
 
     def calcSurvivalValue(self):
@@ -84,15 +85,21 @@ class EP:
         ax.plot(generationList, bestValueList, label = label)
 
 if __name__ == "__main__":
-    mList = [50, 100]
-    indList = [500, 1000]
+    mList = [1, 10, 50, 100]
+    indList = [100, 500, 1000, 5000]
+    sigmaList = [1.0e-5, 1.0e-4, 1.0e-3, 1.0e-2, 1.0e-1]
     fig, ax = plt.subplots()
     for m in mList:
-        ep = EP(m, indList[0])
+        ep = EP(m, indList[2], 1)
         ep.execEPAndSaveResut(ax, "m=" + str(m))
-    saveResult(ax, "ep_f_m")
+    saveResult(ax, "ep_m")
     fig, ax = plt.subplots()
     for i in indList:
-        ep = EP(mList[0], i)
+        ep = EP(mList[2], i, 1)
         ep.execEPAndSaveResut(ax, "indivisual=" + str(i))
-    saveResult(ax, "ep_f_indivisual")
+    saveResult(ax, "ep_indivisual")
+    fig, ax = plt.subplots()
+    for s in sigmaList:
+        ep = EP(mList[2], indList[2], s)
+        ep.execEPAndSaveResut(ax, "sigma=" + str(s))
+    saveResult(ax, "ep_sigma")

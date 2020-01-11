@@ -48,7 +48,7 @@ class EP:
         generationList = []
         bestValueList = []
         while loop < GENERATION and self.calcFitness() > THRESHOLD:
-            if loop % 50 == 0:
+            if loop % 100 == 0:
                 print("generation : %d  min : %f" % (loop, self.calcFitness()))
                 print(sorted(self.indivisuals, key = lambda x: x.rosenBrock())[0].gene)
                 generationList.append(loop)
@@ -85,8 +85,8 @@ class EP:
         ax.plot(generationList, bestValueList, label = label)
 
 if __name__ == "__main__":
-    mList = [10, 50, 100, 100]
-    indList = [100, 500, 1000]
+    mList = [5, 10, 50, 100]
+    indList = [100, 500, 1000, 5000]
     fig, ax = plt.subplots()
     for m in mList:
         ep = EP(m, indList[1], 0.01)
